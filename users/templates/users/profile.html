@@ -1,0 +1,225 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load inventory_extras %}
+
+{% block head-content %}
+<title>BlazeGift.up</title>
+<link rel="stylesheet" href="{% static 'users/css/profile_style.css' %}">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+{% endblock %}
+
+{% block main-content %}
+<div class="page-content" id="pageContent">
+    <div class="top-section">
+        <div class="side-btns">
+            <button id="langBtn" class="icon-btn" onclick="toggleLanguage()" aria-label="Язык">
+                <span id="flagLottie" class="flag-lottie"></span>
+            </button>
+            <button class="icon-btn" id="soundBtn" aria-label="Звук 0%">
+                <i class="ti ti-volume-off"></i>
+            </button>
+        </div>
+
+        <div class="profile-center">
+            <div class="avatar-wrap" id="user-icon">
+                <div class="avatar-placeholder"><i class="ti ti-user"></i></div>
+            </div>
+            <div id="user-info" class="user-name">—</div>
+        </div>
+
+        <div style="width:48px;flex-shrink:0;"></div>
+    </div>
+
+    <div class="action-row">
+        <button class="deposit-btn" onclick="openDeposit()">
+            <span data-ru="Пополнить" data-en="Deposit">Пополнить</span>
+        </button>
+        <div class="balance-chip">
+            <span>{{ user.balance|floatformat:2 }}</span>
+            <img class="ton-icon" src="{% static 'images/toncoin-logo.png' %}" alt="TON">
+        </div>
+    </div>
+
+    <div class="tabs-wrap">
+        <div class="tabs-container">
+            <button class="tab-btn active" onclick="switchTab('inventory')" data-ru="Инвентарь" data-en="Inventory">Инвентарь</button>
+            <button class="tab-btn" onclick="switchTab('stats')" data-ru="Статистика" data-en="Statistics">Статистика</button>
+        </div>
+    </div>
+
+    
+
+{% if inventory_items %}
+<div id="tab-inventory" class="panel active">
+    <div class="inv-header">
+        <div class="inv-info">
+            <h2 class="inven" data-ru="Инвентарь" data-en="Inventory">Инвентарь</h2>
+            <span class="count-items"
+                data-ru="Предметов: {{ total_items_count}}"
+                data-en="Items: {{ total_items_count }}">Предметов: {{ total_items_count }}</span>
+    </div>
+    <button class="sell-all-btn" onclick="openSellAllConfirm()">
+        <i class="ti ti-shopping-bag"></i>
+        <span data-ru="Продать всё" data-en="Sell everything">Продать всё</span>
+    </button>
+</div>
+<div class="inventory-grid">
+    {% for item in inventory_items %}
+        {% for _ in item.amount|times %}
+        <div class="inventory-item"
+            onclick="openItemSheet({{ item.id }}, '{{ item.gift.name|escapejs }}', '{{ item.gift.price|floatformat:2 }}', '{{ item.gift.image_url|escapejs }}')">
+            <div class="inventory-item-img-wrap">
+                <img src="{{ item.gift.image_url }}" alt="{{ item.gift.name }}">
+            </div>
+            <div class="inventory-item-name">{{ item.gift.name }}</div>
+            <div class="inventory-item-price">
+                <span>{{ item.gift.price|floatformat:2 }}</span>
+                <img class="ton-icon" src="{% static 'images/toncoin-logo.png' %}" alt="TON">
+            </div>
+        </div>
+        {% endfor %}
+    {% endfor %}
+</div>
+{% else %}
+<div id="tab-inventory" class="panel active">
+    <div class="inv-header">
+        <div class="inv-info">
+            <h2 class="inven" data-ru="Инвентарь" data-en="Inventory">Инвентарь</h2>
+            <span class="count-items"
+                data-ru="Предметов: {{ total_items_count}}"
+                data-en="Items: {{ total_items_count }}">Предметов: {{ total_items_count }}</span>
+        </div>
+    </div>
+<div class="empty-inventory">
+    <div class="empty-title" data-ru="Инвентарь пуст" data-en="Inventory is empty">Инвентарь пуст</div>
+    <div class="empty-sub">
+        <span data-ru="Чтобы пополнить баланс подарком" data-en="To top up your balance with a gift">Чтобы пополнить баланс подарком</span><br>
+        <span data-ru="Отправь подарок в наш банк" data-en="Send a gift to our bank">Отправь подарок в наш банк</span>
+        <a href="https://t.me/BlazeGift_bank" target="_blank">@BlazeGift_bank</a>
+    </div>
+</div>
+{% endif %}
+    </div>
+
+    <div id="tab-stats" class="panel">
+        <div class="inv-header">
+            <div class="inv-info">
+                <h2 class="inven" data-ru="Статистика" data-en="Statistics">Статистика</h2>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon"><i class="ti ti-package"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value" id="statCases">{{ user.total_cases }}</div>
+                    <div class="stat-label" data-ru="Кейсов открыто" data-en="Cases opened">Кейсов открыто</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon"><i class="ti ti-refresh"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value" id="statTurnover">{{ user.total_turnover }} GRAM</div>
+                    <div class="stat-label" data-ru="Оборот" data-en="Turnover">Оборот</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon"><i class="ti ti-wallet"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value" id="statDeposit">{{ user.total_deposited }} GRAM</div>
+                    <div class="stat-label" data-ru="Всего пополнено" data-en="Total deposited">Всего пополнено</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon"><i class="ti ti-users"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value" id="statReferrals">{{ user.ref_count }}</div>
+                    <div class="stat-label" data-ru="Всего рефералов" data-en="Total referrals">Всего рефералов</div>
+                </div>
+            </div>
+
+            <div class="stat-card stat-card-wide">
+                <div class="stat-icon"><i class="ti ti-calendar-event"></i></div>
+                <div class="stat-info">
+                    <div class="stat-value" id="statJoined">—</div>
+                    <div class="stat-label" data-ru="Дата первого входа" data-en="First login date">Дата первого входа</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mini-overlay" id="sellAllOverlay" onclick="closeSellAllConfirm()"></div>
+<div class="mini-sheet" id="sellAllSheet">
+    <div class="sheet-handle"></div>
+    <div class="confirm-body">
+        <div class="confirm-question" data-ru="Вы точно хотите продать всё?" data-en="Are you sure you want to sell everything?">Вы точно хотите продать всё?</div>
+        <div class="confirm-price">
+            <span id="sellAllPrice">0.00</span>
+            <img class="ton-icon" src="{% static 'images/toncoin-logo.png' %}" alt="TON">
+        </div>
+        <div class="confirm-sub" id="sellAllCount"></div>
+    </div>
+    <div class="confirm-actions">
+        <button class="sheet-btn sheet-btn-gold" onclick="confirmSellAll()" data-ru="Да" data-en="Yes">Да</button>
+        <button class="sheet-btn sheet-btn-gray" onclick="closeSellAllConfirm()" data-ru="Нет" data-en="No">Нет</button>
+    </div>
+</div>
+
+<div class="mini-overlay" id="itemOverlay" onclick="closeItemSheet()"></div>
+<div class="mini-sheet" id="itemSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header" style="justify-content:flex-end;">
+        <button class="close-btn" onclick="closeItemSheet()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="item-sheet-body">
+        <div class="item-sheet-img-wrap"><img id="itemSheetImg" src="" alt=""></div>
+        <div class="item-sheet-name" id="itemSheetName"></div>
+        <div class="item-sheet-price">
+            <span id="itemSheetPrice">0.00</span>
+            <img class="ton-icon" src="{% static 'images/toncoin-logo.png' %}" alt="TON">
+        </div>
+    </div>
+    <div class="confirm-actions">
+        <button class="sheet-btn sheet-btn-gray" onclick="openWithdrawConfirm()" data-ru="Вывести" data-en="Withdraw">Вывести</button>
+        <button class="sheet-btn sheet-btn-gold" onclick="sellItem()" data-ru="Продать" data-en="Sell">Продать</button>
+    </div>
+</div>
+
+<div class="mini-overlay" id="withdrawOverlay" onclick="closeWithdrawConfirm()"></div>
+<div class="mini-sheet" id="withdrawSheet">
+    <div class="sheet-handle"></div>
+    <div class="confirm-body">
+        <div class="confirm-question" data-ru="Вы точно хотите вывести этот предмет?" data-en="Are you sure you want to withdraw this item?">Вы точно хотите вывести этот предмет?</div>
+        <div class="confirm-sub">
+            <span data-ru="Перед подтверждением проверьте, есть ли у вас чат с" data-en="Before confirming, please check if you have a chat with">Перед подтверждением проверьте, есть ли у Вас чат с этим аккаунтом</span>
+            <a class="link-text" href="https://t.me/BlazeGift_bank" target="_blank">@BlazeGift_bank</a>
+            <span data-ru=", если нет, отправьте смайлик банку" data-en=", if not, send a sticker to the bank">, если нет, отправьте смайлик банку</span>
+        </div>
+    </div>
+    <div class="confirm-actions">
+        <button class="sheet-btn sheet-btn-gold" onclick="confirmWithdraw()" data-ru="Да" data-en="Yes">Да</button>
+        <button class="sheet-btn sheet-btn-gray" onclick="closeWithdrawConfirm()" data-ru="Нет" data-en="No">Нет</button>
+    </div>
+</div>
+<script>
+    window.APP_DATA = {
+        lang: "{{ lang }}",
+        flagAnimations: {
+            ru: "{% static 'users/json/russian-flag.json' %}",
+            en: "{% static 'users/json/usa-flag.json' %}"
+        },
+        stats: {
+            casesOpened: "{{ user.total_cases }}",
+            turnover: "{{ user.total_turnover }}",
+            totalDeposited: "{{ user.total_deposited }}",
+            referrals: "{{ user.ref_count }}",
+            joinedAt: "{{ user.created_at|date:'c' }}"
+        }
+    }
+</script>
+<script src="{% static 'users/js/profile_script.js' %}?v=4"></script>
+{% endblock %}

@@ -1,0 +1,244 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="{% static 'css/base_style.css' %}">
+    {% block head-content %} {% endblock %}
+</head>
+<body style="display: none;">
+
+<script>
+    if (!window.Telegram || !window.Telegram.WebApp || !window.Telegram.WebApp.initData) {
+        throw new Error("Not opened from Telegram")
+        window.stop()
+    }      
+
+    document.body.style.display = 'block';
+
+    window.APP_DATA = window.APP_DATA || {};
+    window.APP_DATA.lang = "{{ lang|default:'ru' }}";
+
+    const user = window.Telegram?.WebApp?.initDataUnsafe?.user;
+    const startParam = window.Telegram.WebApp.initDataUnsafe.start_param;
+
+    fetch('/api/initial-data/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json', 
+        },
+        body: JSON.stringify({ telegram_id: user.id, name: user.first_name, username: user.username, start_param: startParam })
+    })
+
+    window.Telegram.WebApp.requestFullscreen();
+    window.Telegram.WebApp.ready();
+</script>
+
+<script>
+    window.SoundManager = (function () {
+        const STORAGE_KEY = 'blazegift_sound_enabled';
+        let enabled = localStorage.getItem(STORAGE_KEY) === 'true';
+        const cache = {};
+        let audioCtx = null;
+
+        function isEnabled() {
+            return enabled;
+        }
+
+        function setEnabled(value) {
+            enabled = !!value;
+            localStorage.setItem(STORAGE_KEY, enabled ? 'true' : 'false');
+            document.dispatchEvent(new CustomEvent('soundchange', { detail: { enabled } }));
+        }
+
+        function toggle() {
+            setEnabled(!enabled);
+            return enabled;
+        }
+
+        function play(src) {
+            if (!enabled || !src) return;
+            let audio = cache[src];
+            if (!audio) {
+                audio = new Audio(src);
+                cache[src] = audio;
+            }
+            audio.volume = 1;
+            audio.currentTime = 0;
+            audio.play().catch(() => {});
+        }
+
+        function playTestTone() {
+            if (!enabled) return;
+            try {
+                audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.value = 880;
+                gain.gain.value = 1;
+                osc.connect(gain).connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.12);
+            } catch (e) {}
+        }
+
+        return { isEnabled, setEnabled, toggle, play, playTestTone };
+    })();
+</script>
+
+{% block main-content %} {% endblock %}
+
+<div id="giveaway-toast" class="giveaway-toast">
+    <div class="giveaway-toast-inner">
+        <div class="giveaway-toast-text">
+            <span class="giveaway-toast-emoji"><i class="ti ti-gift" style="font-size:20px;color:#cb8a19;"></i></span>
+            <span id="giveaway-toast-msg">Вкладка <b>Розыгрыши</b> в разработке...</span>
+        </div>
+        <button class="giveaway-toast-close" onclick="closeGiveawayToast()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="giveaway-toast-bar" id="giveaway-toast-bar"></div>
+</div>
+
+<nav class="nav-bar">
+    <button class="nav-item" data-page="" onclick="showGiveawayToast()">
+        <div class="icon-wrap">
+            <i class="ti ti-gift"></i>
+        </div>
+        <span data-ru="Розыгрыши" data-en="Giveaways">Розыгрыши</span>
+    </button>
+
+    <button class="nav-item {% if request.resolver_match.url_name == 'earn' %}active{% endif %}" data-page="{% url 'earn' %}" onclick="navigate(this)">
+        <div class="icon-wrap">
+            <i class="ti ti-coin"></i>
+        </div>
+        <span data-ru="Заработать" data-en="Earn">Заработать</span>
+    </button>
+
+    <button class="nav-item {% if request.resolver_match.url_name == 'games' %}active{% endif %}" data-page="{% url 'games' %}" onclick="navigate(this)">
+        <div class="icon-wrap">
+            <i class="ti ti-home"></i>
+        </div>
+        <span data-ru="Игры" data-en="Games">Игры</span>
+    </button>
+
+    <button class="nav-item {% if request.resolver_match.url_name == 'leaderboard' %}active{% endif %}" data-page="{% url 'leaderboard' %}" onclick="navigate(this)">
+        <div class="icon-wrap">
+            <i class="ti ti-trophy"></i>
+        </div>
+        <span data-ru="Лидерборд" data-en="Leaderboard">Лидерборд</span>
+    </button>
+
+    <button class="nav-item {% if request.resolver_match.url_name == 'profile' %}active{% endif %}" data-page="{% url 'profile' %}" onclick="navigate(this)">
+        <div class="icon-wrap">
+            <i class="ti ti-user"></i>
+        </div>
+        <span data-ru="Профиль" data-en="Profile">Профиль</span>
+    </button>
+</nav>
+
+<div id="depositOverlay" onclick="closeDeposit()"></div>
+
+<div id="depositSheet">
+    <div class="sheet-handle"></div>
+
+    <div class="sheet-header">
+        <div class="sheet-title" data-ru="Депозит" data-en="Deposit">Депозит</div>
+        <button class="close-btn" onclick="closeDeposit()"><i class="ti ti-x"></i></button>
+    </div>
+
+    <div class="methods-row">
+        <button class="method-btn active-gold" onclick="selectMethod(this,'stars')" id="m-stars">
+          <img src="{% static 'images/star-logo.png' %}" style="width:32px;height:32px;">
+            Stars
+        </button>
+        <button class="method-btn" onclick="selectMethod(this,'ton')" id="m-ton" style="position:relative;">
+          <img src="{% static 'images/toncoin-logo.png' %}" style="width:32px;height:32px;border-radius:50%;">
+            GRAM
+            <span class="badge-plus">+10%</span>
+        </button>
+        <button class="method-btn" onclick="selectMethod(this,'crypto')" id="m-crypto" style="position:relative;">
+          <img src="{% static 'images/cryptobot-logo.jpg' %}" style="width:32px;height:32px;border-radius:12px;">
+            Crypto
+            <span class="badge-plus">+10%</span>
+        </button>
+        <button class="method-btn" onclick="selectMethod(this,'gifts')" id="m-gifts">
+            <i class="ti ti-gift"></i>
+            <span data-ru="Подарки" data-en="Gifts">Подарки</span>
+        </button>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="addr-section hidden" id="addrSection">
+        <div class="addr-label" id="addrLabel" data-ru="Адрес кошелька для пополнения" data-en="Wallet address for deposit">Адрес кошелька для пополнения</div>
+        <div class="addr-display" id="addrDisplay">
+          <img src="{% static 'images/toncoin-logo.png' %}" style="width:20px;height:20px;border-radius:50%;">
+            <span class="addr-text">UQCr8iDn9e...7kJJ</span>
+        </div>
+    </div>
+
+    <div class="input-section" id="inputSection">
+        <div class="input-desc" id="inputDesc" data-ru="Введите количество Stars для пополнения" data-en="Enter the amount of Stars to deposit">Введите количество Stars для пополнения</div>
+
+        <div class="amount-row">
+            <span class="amount-label" data-ru="Сумма" data-en="Amount">Сумма</span>
+            <div class="balance-info hidden" id="balanceInfo">
+                <span data-ru="Баланс:" data-en="Balance:">Баланс:</span>
+                <img src="{% static 'images/toncoin-logo.png' %}" style="width:18px;height:18px;border-radius:50%;">
+                <span style="color:#fff;font-weight:600;">0.02</span>
+            </div>
+            <button class="crypto-toggle hidden" id="cryptoToggle" onclick="toggleCrypto()">
+                <span id="cryptoIconImg"><svg style="width:16px;height:16px;flex-shrink:0;" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="28" cy="28" r="28" fill="#26A17B"/><text x="50%" y="56%" dominant-baseline="middle" text-anchor="middle" fill="white" font-size="22" font-weight="700" font-family="Arial">₮</text></svg></span>
+                <span id="cryptoLabel">USDT</span>
+                <i class="ti ti-chevron-down" style="font-size:12px;color:#666;"></i>
+            </button>
+        </div>
+
+        <div class="amount-input-wrap">
+            <input class="amount-input" id="amountInput" type="number" inputmode="decimal"
+                placeholder="0.00" oninput="validateAmount()">
+            <span class="input-suffix" id="inputSuffix">⭐</span>
+        </div>
+
+        <div class="error-msg" id="errorMsg"></div>
+
+        <div class="quick-row">
+            <button class="quick-btn" onclick="addAmount(1)">1</button>
+            <button class="quick-btn" onclick="addAmount(5)">5</button>
+            <button class="quick-btn" onclick="addAmount(10)">10</button>
+            <button class="quick-btn" onclick="addAmount(50)">50</button>
+        </div>
+    </div>
+
+    <div class="gifts-section hidden" id="giftsSection">
+        <div class="gifts-steps">
+            <p><span class="step-num">1.</span> <span data-ru="Нажмите на кнопку ниже, чтобы открыть наш банк" data-en="Tap the button below to open our bank">Нажмите на кнопку ниже, чтобы открыть наш банк</span> <a href="https://t.me/BlazeGift_bank">@BlazeGift_bank</a>.</p>
+            <p><span class="step-num">2.</span> <span data-ru="Отправьте подарок из вашего профиля банку." data-en="Send a gift from your profile to the bank.">Отправьте подарок из вашего профиля банку.</span></p>
+            <p><span class="step-num">3.</span> <span data-ru="В течении нескольких секунд ваш подарок будет конвертирован в баланс на ваш счёт в приложении." data-en="Within a few seconds your gift will be converted into balance on your account in the app.">В течении нескольких секунд ваш подарок будет конвертирован в баланс на ваш счёт в приложении.</span></p>
+        </div>
+    </div>
+
+    <div class="submit-section">
+        <button class="submit-btn" onclick="submitDeposit()" id="submitBtn" data-ru="Пополнить" data-en="Deposit">Пополнить</button>
+    </div>
+
+    <div class="info-row" id="infoRow">
+        <i class="ti ti-shield-check"></i>
+        <span data-ru="Транзакция защищена и обрабатывается мгновенно" data-en="Transaction is secure and processed instantly">Транзакция защищена и обрабатывается мгновенно</span>
+    </div>
+</div>
+
+<script>
+    window.APP_DATA = window.APP_DATA || {};
+    window.APP_DATA.lang = window.APP_DATA.lang || "{{ lang|default:'ru' }}";
+</script>
+<script src="{% static 'js/base_script.js' %}"></script>
+
+</body>
+</html>
+

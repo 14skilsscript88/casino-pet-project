@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block head-content %}
+<link rel="stylesheet" href="{% static 'earnings/css/earn_style.css' %}">
+<script>
+    document.addEventListener('touchstart', function(){}, { passive: true });
+</script>
+</head>
+<div class="topbar">
+<button class="deposit-btn" onclick="openDeposit()" data-ru="Пополнить" data-en="Deposit">Пополнить</button>
+{% endblock %}
+
+{% block main-content %}
+<div class="balance-chip">
+    <span id="balance-amount">{{ user.balance|floatformat:2 }}</span>
+    <img src="{% static 'images/toncoin-logo.png' %}" style="width:20px;height:20px;border-radius:50%;object-fit:cover;">
+</div>
+
+<div class="avatar-wrap" id="user-icon" onclick="window.location.href='{% url 'profile' %}'">
+    <div class="avatar-placeholder"><i class="ti ti-user"></i></div>
+</div>
+</div>
+
+<div class="topbar-spacer"></div>
+
+<div class="page-content">
+    <div class="earn-hero" id="earn-hero">
+        <div class="earn-hero-icon">
+            <i class="ti ti-users"></i>
+        </div>
+        <div class="earn-hero-title" data-ru="Приглашай друзей" data-en="Invite friends">Приглашай друзей</div>
+        <div class="earn-hero-sub" data-ru="И получай 10% от их депозитов на свой баланс" data-en="And get 10% of their deposits on your balance">И получай 10% от их депозитов на свой баланс</div>
+    </div>
+
+    <div class="tabs-wrap">
+        <div class="tabs-container">
+            <button class="tab-btn active" onclick="switchTab('ref')" data-ru="Реф. система" data-en="Referrals">Реф. система</button>
+            <button class="tab-btn" onclick="switchTab('tasks')" data-ru="Задания" data-en="Tasks">Задания</button>
+        </div>
+    </div>
+
+    <div id="tab-tasks" class="panel">
+    <div class="tasks-section">
+        <div class="task-card">
+            <div class="task-icon-wrap" style="background:transparent;overflow:hidden;">
+                <img src="{% static 'earnings/images/blazeGift.jpg' %}" alt="task icon" style="width:48px;height:48px;object-fit:cover;border-radius:50%;">
+            </div>
+            <div class="task-info">
+                <div class="task-title" data-ru="Подпишись на наш канал!" data-en="Subscribe to our channel!">Подпишись на наш канал!</div>
+                <div class="task-reward">
+                    <span data-ru="Награда:" data-en="Reward:">Награда:</span> <img class="ton-icon-sm" src="{% static 'images/toncoin-logo.png' %}" alt="TON"> 0.05
+                </div>
+            </div>
+            {% if user.channel_sub_done %}
+                <button class="task-btn done" disabled data-ru="Выполнено" data-en="Done">Выполнено</button>
+            {% else %}
+                <button class="task-btn" onclick="doTask(this,'https://t.me/BlazeGift_News')" data-ru="Начать" data-en="Start">Начать</button>
+            {% endif %}
+        </div>
+
+        <div class="task-card">
+            <div class="task-icon-wrap" style="background:transparent;overflow:hidden;">
+                <img src="{% static 'earnings/images/blazeGift-chat.jpg' %}" alt="task icon" style="width:48px;height:48px;object-fit:cover;border-radius:50%;">
+            </div>
+            <div class="task-info">
+                <div class="task-title" data-ru="Подпишись на наш чат!" data-en="Subscribe to our chat!">Подпишись на наш чат!</div>
+                <div class="task-reward">
+                    <span data-ru="Награда:" data-en="Reward:">Награда:</span> <img class="ton-icon-sm" src="{% static 'images/toncoin-logo.png' %}" alt="TON"> 0.05
+                </div>
+            </div>
+            {% if user.chat_sub_done %}
+                <button class="task-btn done" disabled data-ru="Выполнено" data-en="Done">Выполнено</button>
+            {% else %}
+                <button class="task-btn" onclick="doTask(this,'https://t.me/BlazeGiftChat')" data-ru="Начать" data-en="Start">Начать</button>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+    <div id="tab-ref" class="panel active">
+        <div class="ref-section">
+
+            <div class="ref-action-row">
+                <button class="ref-invite-btn" id="inviteBtn" data-ru="Пригласить" data-en="Invite">Пригласить</button>
+                <button class="ref-copy-btn" id="copyBtn" title="Скопировать ссылку">
+                    <i class="ti ti-copy"></i>
+                </button>
+            </div>
+
+            <div class="ref-stats-card">
+                <div class="ref-stat-row">
+                    <div class="ref-stat-icon"><i class="ti ti-users"></i></div>
+                    <div class="ref-stat-label" data-ru="Мои рефералы" data-en="My referrals">Мои рефералы</div>
+                    <div class="ref-stat-val" id="refCount">{{ user.ref_count }}</div>
+                </div>
+                <div class="ref-stat-row">
+                    <div class="ref-stat-icon">
+                        <img src="{% static 'images/toncoin-logo.png' %}" alt="TON" style="width: 36px;height:36px;">
+                    </div>
+                    <div class="ref-stat-label" data-ru="Всего заработано" data-en="Total earned">Всего заработано</div>
+                    <div class="ref-stat-val" id="refEarned">
+                        {{ user.total_earned_from_referrals }} GRAM
+                        <img class="ton-icon-sm" src="{% static 'images/toncoin-logo.png' %}" alt="TON">
+                    </div>
+                </div>
+            </div>
+            <div class="ref-list-card" id="refList" style="display:none;"></div>
+        </div>
+    </div>
+</div>
+<script>
+    window.APP_DATA = window.APP_DATA || {};
+    window.APP_DATA.lang = "{{ lang }}";
+</script>
+<script src="{% static 'earnings/js/earn_script.js' %}"></script>
+{% endblock %}

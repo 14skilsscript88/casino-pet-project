@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block head-content %}
+<link rel="stylesheet" href="{% static 'games/css/open_case_style.css' %}">
+<script>
+    if (!window.Telegram) window.Telegram = { WebApp: { initDataUnsafe: {}, ready: function(){}, expand: function(){} } };
+</script>
+{% endblock %}
+
+{% block main-content %}
+
+<div class="topbar">
+    <button class="deposit-btn" onclick="openDeposit()" data-ru="Пополнить" data-en="Deposit">Пополнить</button>
+    <div class="balance-chip">
+        <span id="balance-amount">{{ user.balance|floatformat:2 }}</span>
+        <img class="ton-icon" src="{% static 'images/toncoin-logo.png' %}" alt="TON">
+    </div>
+    <div class="avatar-wrap" id="user-icon" onclick="window.location.href='{% url 'profile' %}'">
+        <div class="avatar-placeholder"><i class="ti ti-user"></i></div>
+    </div>
+</div>
+
+<div class="topbar-spacer"></div>
+
+<div class="page-content">
+    <div class="live-feed-wrap">
+        <div class="live-feed-inner">
+            <div class="live-badge"><div class="live-dot"></div><span class="live-text">Live</span></div>
+            <div class="live-scroll-track"><div class="live-scroll-inner" id="live-scroll"></div></div>
+        </div>
+    </div>
+
+    <div class="case-title-row">
+        <button class="back-btn" onclick="window.location.href='{% url 'games' %}'"><i class="ti ti-arrow-left"></i></button>
+        <span class="case-title">{{ case.name }}</span>
+        <button class="quick-fast-btn" id="quick-fast-btn" onclick="toggleQuick()"><i class="ti ti-bolt"></i></button>
+    </div>
+
+    <div class="case-hero">
+        <div class="case-hero-inner" style="--tint: {{ case.tint_rgb }};">
+            <div class="case-glow-bg"></div>
+
+            <div class="reels-container" id="reels-container">
+                <div class="reel-wrap" id="reel-wrap-0">
+                    <div class="reel-fade-l"></div>
+                    <div class="reel-fade-r"></div>
+                    <div class="reel-marker"></div>
+                    <div class="reel-strip idle" id="reel-strip-0"></div>
+                </div>
+            </div>
+
+            <div class="case-controls-card">
+                <div class="qty-selector">
+                    <button class="qty-btn active" data-qty="1" onclick="setQty(1)">1</button>
+                    <button class="qty-btn" data-qty="2" onclick="setQty(2)">2</button>
+                    <button class="qty-btn" data-qty="3" onclick="setQty(3)">3</button>
+                </div>
+
+                <button class="open-btn" id="open-btn">
+                    Открыть за {{ case.price|floatformat:2 }}
+                    <img class="ton-logo" src="{% static 'images/toncoin-logo.png' %}" alt="" style="width:22px;height:22px;flex-shrink:0;object-fit:contain">
+                </button>
+
+                <div class="secondary-btns">
+                    <button class="sec-btn demo" id="demo-btn" onclick="toggleDemo()"><i class="ti ti-device-gamepad-2"></i> <span data-ru="Демо" data-en="Demo">Демо</span></button>
+                    <button class="sec-btn lucky" id="lucky-btn" onclick="toggleLucky()"><i class="ti ti-clover"></i> Lucky Buy</button>
+                </div>
+
+                <div class="lucky-panel-wrap" id="lucky-panel-wrap">
+                    <div class="lucky-panel">
+                        <div class="lucky-panel-head">
+                            <div class="lucky-panel-title">Lucky Buy<b id="lucky-percent-val">40%</b></div>
+                            <button class="lucky-help-btn" onclick="openLuckyHelp()"><i class="ti ti-help"></i></button>
+                        </div>
+                        <input type="range" class="lucky-slider" id="lucky-slider" min="5" max="75" step="1" value="40" oninput="setLuckyPercent(this.value)">
+                        <div class="lucky-marks">
+                            <span style="left:0%;transform:translateX(50%)">5</span>
+                            <span style="left:21.43%;transform:translateX(-20%)">20</span>
+                            <span style="left:42.86%;transform:translateX(-50%)">35</span>
+                            <span style="left:64.29%;transform:translateX(-65%)">50</span>
+                            <span style="left:85.71%;transform:translateX(-80%)">65</span>
+                            <span style="left:100%;transform:translateX(-115%)">75</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="contents-section">
+        <div class="contents-title" data-ru="Содержимое кейса" data-en="Case contents">Содержимое кейса</div>
+        <div class="contents-meta" id="gifts-meta" data-ru="Количество подарков: 0" data-en="Number of gifts: 0">Количество подарков: 0</div>
+        <div class="gifts-grid" id="gifts-grid"></div>
+    </div>
+
+</div>
+
+<div id="app-toast" class="giveaway-toast">
+    <div class="giveaway-toast-inner">
+        <div class="giveaway-toast-text">
+            <span class="giveaway-toast-emoji"><i class="ti ti-alert-triangle" style="font-size:20px;color:#ffa000;"></i></span>
+            <span id="app-toast-text"></span>
+        </div>
+        <button class="giveaway-toast-close" onclick="closeAppToast()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="giveaway-toast-bar" id="app-toast-bar"></div>
+</div>
+
+<div class="win-overlay" id="win-overlay">
+    <div class="win-modal" id="win-modal">
+        <div class="win-modal-glow"></div>
+        <div class="win-modal-handle"></div>
+        <div class="win-sparks" id="win-sparks"></div>
+        <div class="win-content">
+        <div class="win-title" id="win-title" data-ru="ВЫ ВЫИГРАЛИ!" data-en="YOU WON!">ВЫ ВЫИГРАЛИ!</div>
+
+        <div class="win-slider-wrap">
+            <button class="win-arrow win-arrow-l" id="win-prev" onclick="slideWin(-1)"><span>&#8249;</span></button>
+            <div class="win-slides" id="win-slides"></div>
+            <button class="win-arrow win-arrow-r" id="win-next" onclick="slideWin(1)"><span>&#8250;</span></button>
+        </div>
+
+        <div class="win-dots" id="win-dots"></div>
+
+        <div class="win-actions">
+            <button class="win-btn-take" onclick="takeWonItem()" data-ru="Забрать" data-en="Claim">Забрать</button>
+            <button class="win-btn-sell" onclick="sellWonItem()" data-ru="Продать" data-en="Sell">Продать</button>
+        </div>
+        </div>
+    </div>
+</div>
+
+<div class="how-sheet-overlay" id="lucky-help-overlay" onclick="closeLuckyHelp(event)">
+    <div class="how-sheet">
+        <div class="how-sheet-handle"></div>
+        <div class="how-sheet-title" data-ru="Как работает Lucky Buy?" data-en="How does Lucky Buy work?">Как работает Lucky Buy?</div>
+        <div class="how-steps-box">
+            <p><span class="step-num">1.</span> <span data-ru="Включаешь Lucky Buy и выбираешь процент от 5% до 75%." data-en="Turn on Lucky Buy and pick a percentage from 5% to 75%.">Включаешь Lucky Buy и выбираешь процент от 5% до 75%.</span></p>
+            <p><span class="step-num">2.</span> <span data-ru="Цена открытия кейса снижается ровно на эту долю — например, кейс за 1.3 TON при 50% обойдётся в 0.65 TON." data-en="The case price drops by exactly that share — e.g. a 1.3 TON case at 50% will cost 0.65 TON.">Цена открытия кейса снижается ровно на эту долю — например, кейс за 1.3 TON при 50% обойдётся в 0.65 TON.</span></p>
+            <p><span class="step-num">3.</span> <span data-ru="После того как лента остановится на подарке, разыгрывается второй раунд: с шансом, равным твоему проценту, выпадает" data-en="After the reel stops on a gift, a second round is played: with a chance equal to your percentage,">После того как лента остановится на подарке, разыгрывается второй раунд: с шансом, равным твоему проценту, выпадает</span> <b style="color:#22c55e">✓</b> <span data-ru="— и подарок твой. Иначе выпадает" data-en="comes up — and the gift is yours. Otherwise">— и подарок твой. Иначе выпадает</span> <b style="color:#f87171">✗</b> <span data-ru="— и подарок сгорает." data-en="comes up — and the gift is lost.">— и подарок сгорает.</span></p>
+            <p><span class="step-num">4.</span> <span data-ru="Чем ниже процент — тем дешевле открытие, но тем ниже шанс забрать выигрыш." data-en="The lower the percentage, the cheaper the opening, but the lower the chance to keep your win.">Чем ниже процент — тем дешевле открытие, но тем ниже шанс забрать выигрыш.</span></p>
+        </div>
+    </div>
+</div>
+
+<script>
+    window.STATIC_TON_LOGO = "{% static 'images/toncoin-logo.png' %}";
+    window.CASE_OPEN_SOUND_URL = "{% static 'games/sounds/case_open.m4a' %}";
+    window.CASE_OPEN_SOUND_URL_FAST = "{% static 'games/sounds/case_open_fast.m4a' %}";
+    window.APP_DATA = window.APP_DATA || {};
+    window.APP_DATA.lang = "{{ lang }}";
+    window.CASE_DATA = {
+        slug: "{{ case.slug|escapejs }}",
+        name: "{{ case.name|escapejs }}",
+        price: {{ case.price }},
+        gifts: [
+            {% for item in case_items %}
+            {
+                id: {{ item.gift.id }},
+                name: "{{ item.gift.name|escapejs }}",
+                img: "{{ item.gift.image_url|escapejs }}",
+                price: {{ item.gift.price }},
+                weight: {{ item.weight }}
+            }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ]
+    };
+</script>
+<script src="{% static 'games/js/open_case_script.js' %}?v=6"></script>
+{% endblock %}

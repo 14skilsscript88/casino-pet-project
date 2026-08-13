@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% load static %}
+ 
+{% block head-content %}
+<link rel="stylesheet" href="{% static 'users/css/leaderboard_style.css' %}?v=3">
+{% endblock %}
+ 
+{% block main-content %}
+<div class="topbar">
+    <button class="deposit-btn" onclick="openDeposit()" data-ru="Пополнить" data-en="Deposit">Пополнить</button>
+ 
+    <div class="balance-chip">
+        <span id="balance-amount">{{ balance|floatformat:2 }}</span>
+        <img src="{% static 'images/toncoin-logo.png' %}" style="width:20px;height:20px;border-radius:50%;object-fit:cover;">
+    </div>
+ 
+    <div class="avatar-wrap" id="user-icon" onclick="window.location.href='{% url 'profile' %}'">
+        <div class="avatar-placeholder"><i class="ti ti-user"></i></div>
+    </div>
+</div>
+ 
+<div class="topbar-spacer"></div>
+ 
+<div class="page-content">
+    <div class="lb-hero">
+        <div class="lb-hero-text">
+            <div class="lb-hero-title" data-ru="Лидерборд" data-en="Leaderboard">Лидерборд</div>
+            <div class="lb-hero-sub" data-ru="Зарабатывай и поднимайся в рейтинге!" data-en="Earn and climb the rating!">Зарабатывай и поднимайся в рейтинге!</div>
+        </div>
+        <div class="lb-trophy-wrap">
+            <img src="https://cdn.changes.tg/gifts/originals/5168043875654172773/Original.png" alt="trophy">
+        </div>
+    </div>
+ 
+    <div class="tabs-wrap">
+        <div class="tabs-container">
+            <button class="tab-btn active" onclick="switchTab('month')" data-ru="За месяц" data-en="This month">За месяц</button>
+            <button class="tab-btn" onclick="switchTab('alltime')" data-ru="За всё время" data-en="All time">За всё время</button>
+        </div>
+    </div>
+ 
+    <div class="lb-list" id="lb-list"></div>
+    <div class="lb-my-bar">
+        <div class="lb-my-label" data-ru="Ваша позиция" data-en="Your position">Ваша позиция</div>
+        <div class="lb-row mine">
+            <div class="lb-rank-wrap">
+                <span class="lb-rank-num blue" id="my-rank">--</span>
+            </div>
+            <div class="lb-avatar" id="my-avatar">
+                <i class="ti ti-user" style="font-size:20px;color:#555;"></i>
+            </div>
+            
+            <div class="lb-name" id="my-name">
+                {% if lang == 'en' %}
+                    {% firstof current_user_per_month.user.name current_user_per_total.name "You" %}
+                {% else %}
+                    {% firstof current_user_per_month.user.name current_user_per_total.name "Вы" %}
+                {% endif %}
+            </div>
+
+            <div class="lb-amount">
+                <span id="my-amount">0.00</span>
+                <img class="ton-icon-sm" src="{% static 'images/toncoin-logo.png' %}" alt="TON">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    window.APP_DATA = {
+        lang: "{{ lang }}",
+        tonPath: "{% static 'images/toncoin-logo.png' %}"
+    }
+</script>
+<script id="django-data" type="application/json">
+{
+    "month": [
+        {% for item in top_users_per_month %}
+            { "name": "{{ item.user.name|escapejs }}", "amount": {{ item.turnover }} }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ],
+    "alltime": [
+        {% for item in top_users_per_total %}
+            { "name": "{{ item.name|escapejs }}", "amount": {{ item.total_turnover }} }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ],
+    "myMonth": {
+        "name": "{% if lang == 'en' %}{% firstof current_user_per_month.user.name 'You' %}{% else %}{% firstof current_user_per_month.user.name 'Вы' %}{% endif %}",
+        "rank": "{{ current_user_rank_per_month|default:'--' }}",
+        "amount": {{ current_user_per_month.turnover|default:0 }}
+    },
+    "myAlltime": {
+        "name": "{% if lang == 'en' %}{% firstof current_user_per_total.name 'You' %}{% else %}{% firstof current_user_per_total.name 'Вы' %}{% endif %}",
+        "rank": "{{ current_user_rank_per_total|default:'--' }}",
+        "amount": {{ current_user_per_total.total_turnover|default:0 }}
+    }
+}
+</script>
+<script src="{% static 'users/js/leaderboard_script.js' %}?v=6"></script>
+{% endblock %}

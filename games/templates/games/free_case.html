@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block head-content %}
+<link rel="stylesheet" href="{% static 'games/css/free_case_style.css' %}">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<script>
+    if (!window.Telegram) window.Telegram = { WebApp: { initDataUnsafe: {}, ready: function(){}, expand: function(){} } };
+</script>
+{% endblock %}
+
+{% block main-content %}
+<div class="topbar">
+    <button class="deposit-btn" onclick="openDeposit()" data-ru="Пополнить" data-en="Deposit">Пополнить</button>
+    <div class="balance-chip">
+        <span id="balance-amount">{{ user.balance|floatformat:2 }}</span>
+        <img class="ton-icon" src="{% static 'images/toncoin-logo.png' %}" alt="TON">
+    </div>
+    <div class="avatar-wrap" id="user-icon" onclick="window.location.href='{% url 'profile' %}'">
+        <div class="avatar-placeholder"><i class="ti ti-user"></i></div>
+    </div>
+</div>
+
+<div class="topbar-spacer"></div>
+
+<div class="page-content">
+    <div class="live-feed-wrap">
+        <div class="live-feed-inner">
+            <div class="live-badge"><div class="live-dot"></div><span class="live-text">Live</span></div>
+            <div class="live-scroll-track"><div class="live-scroll-inner" id="live-scroll"></div></div>
+        </div>
+    </div>
+
+    <div class="case-title-row">
+        <button class="back-btn" onclick="window.location.href='{% url 'games' %}'"><i class="ti ti-arrow-left"></i></button>
+        <span class="case-title">{{ case.name }}</span>
+        <button class="quick-fast-btn" id="quick-fast-btn" onclick="toggleQuick()"><i class="ti ti-bolt"></i></button>
+    </div>
+
+    <div class="case-hero">
+        <div class="case-hero-inner" style="--tint: {{ case.tint_rgb }};">
+            <div class="case-glow-bg"></div>
+
+            <div class="reels-container" id="reels-container">
+                <div class="reel-wrap" id="reel-wrap-0">
+                    <div class="reel-fade-l"></div>
+                    <div class="reel-fade-r"></div>
+                    <div class="reel-marker"></div>
+                    <div class="reel-strip idle" id="reel-strip-0"></div>
+                </div>
+            </div>
+
+            <div class="case-controls-card">
+                <button class="open-btn" id="open-btn" data-ru="Открыть бесплатно" data-en="Open for free">
+                    Открыть бесплатно
+                    <i class="ti ti-gift" style="font-size:20px;"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="contents-section">
+        <div class="contents-title" data-ru="Содержимое кейса" data-en="Case contents">Содержимое кейса</div>
+        <div class="contents-meta" id="gifts-meta" data-ru="Количество подарков: 0" data-en="Number of gifts: 0">Количество подарков: 0</div>
+        <div class="gifts-grid" id="gifts-grid"></div>
+    </div>
+
+</div>
+
+<div id="app-toast" class="giveaway-toast">
+    <div class="giveaway-toast-inner">
+        <div class="giveaway-toast-text">
+            <span class="giveaway-toast-emoji"><i class="ti ti-alert-triangle" style="font-size:20px;color:#ffa000;"></i></span>
+            <span id="app-toast-text"></span>
+        </div>
+        <button class="giveaway-toast-close" onclick="closeAppToast()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="giveaway-toast-bar" id="app-toast-bar"></div>
+</div>
+
+<div class="win-overlay" id="win-overlay">
+    <div class="win-modal" id="win-modal">
+        <div class="win-modal-glow"></div>
+        <div class="win-modal-handle"></div>
+        <div class="win-sparks" id="win-sparks"></div>
+        <div class="win-content">
+        <div class="win-title" id="win-title" data-ru="ВЫ ВЫИГРАЛИ!" data-en="YOU WON!">ВЫ ВЫИГРАЛИ!</div>
+
+        <div class="win-slider-wrap">
+            <button class="win-arrow win-arrow-l" id="win-prev" onclick="slideWin(-1)"><span>&#8249;</span></button>
+            <div class="win-slides" id="win-slides"></div>
+            <button class="win-arrow win-arrow-r" id="win-next" onclick="slideWin(1)"><span>&#8250;</span></button>
+        </div>
+
+        <div class="win-dots" id="win-dots"></div>
+
+        <div class="win-actions">
+            <button class="win-btn-take" onclick="takeWonItem()" data-ru="Забрать" data-en="Claim">Забрать</button>
+            <button class="win-btn-sell" onclick="sellWonItem()" data-ru="Продать" data-en="Sell">Продать</button>
+        </div>
+        </div>
+    </div>
+</div>
+
+<div class="mini-overlay" id="tasksOverlay" onclick="closeTasksSheet()"></div>
+<div class="mini-sheet" id="tasksSheet">
+    <div class="sheet-handle"></div>
+    <div class="tasks-sheet-header">
+        <div class="tasks-sheet-title" data-ru="Выполни задания" data-en="Complete the tasks">Выполни задания</div>
+        <button class="close-btn" onclick="closeTasksSheet()"><i class="ti ti-x"></i></button>
+    </div>
+
+    <div class="tasks-list">
+        <div class="task-row">
+            <img class="task-icon" src="{% static "games/images/blazeGift.jpg" %}" alt="">
+            <div class="task-row-info">
+                <div class="task-row-title" data-ru="Подпишись на канал" data-en="Subscribe to the channel">Подпишись на канал</div>
+                <div class="task-row-error" id="task-sub-error" data-ru="Не выполнено" data-en="Not completed">Не выполнено</div>
+            </div>
+            {% if not user.channel_sub_done %}
+            <button class="task-btn" id="task-sub-btn" onclick="doSubscribeTask()" data-ru="Подписаться" data-en="Subscribe">Подписаться</button>
+            {% else %}
+            <button class="task-btn done" id="task-sub-btn" data-ru="Выполнено" data-en="Done">Выполнено</button>
+            {% endif %}
+        </div>
+
+        <div class="task-row">
+            <div class="task-icon task-icon-fwd"><img src="{% static "games/images/telegram.png" %}"></div>
+            <div class="task-row-info">
+                <div class="task-row-title" data-ru="Перешли 3 сообщения друзьям" data-en="Forward 3 messages to friends">Перешли 3 сообщения друзьям</div>
+                <div class="task-row-error" id="task-fwd-error" data-ru="Не выполнено" data-en="Not completed">Не выполнено</div>
+            </div>
+            <button class="task-btn" id="task-fwd-btn" onclick="doForwardTask()" data-ru="Переслать" data-en="Forward">Переслать</button>
+        </div>
+    </div>
+
+    <button class="tasks-check-btn" id="tasks-check-btn" onclick="checkTasks(this)" data-ru="Проверить" data-en="Check">Проверить</button>
+</div>
+
+<script>
+    window.STATIC_TON_LOGO = "{% static 'images/toncoin-logo.png' %}";
+    window.APP_DATA = window.APP_DATA || {};
+    window.APP_DATA.lang = "{{ lang }}";
+    window.FREE_CASE_META = {
+        canClaim: {{ can_claim|yesno:"true,false" }},
+        cooldownEndsAt: "{{ cooldown_ends_at }}"
+    };
+    window.CASE_DATA = {
+        slug: "{{ case.slug|escapejs }}",
+        name: "{{ case.name|escapejs }}",
+        price: {{ case.price }},
+        channelUrl: "{{ channel_url|escapejs }}",
+        shareMessageId: "{{ share_message_id|default:''|escapejs }}",
+        gifts: [
+            {% for item in case_items %}
+            {
+                name: "{{ item.gift.name|escapejs }}",
+                img: "{{ item.gift.image_url|escapejs }}",
+                price: {{ item.gift.price }},
+                weight: {{ item.weight }}
+            }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ]
+    };
+</script>
+<script src="{% static 'games/js/free_case_script.js' %}"></script>
+{% endblock %}

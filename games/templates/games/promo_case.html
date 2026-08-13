@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block head-content %}
+<link rel="stylesheet" href="{% static 'games/css/promo_case_style.css' %}">
+<script>
+    if (!window.Telegram) window.Telegram = { WebApp: { initDataUnsafe: {}, ready: function(){}, expand: function(){} } };
+</script>
+{% endblock %}
+
+{% block main-content %}
+
+<div class="topbar">
+    <button class="deposit-btn" onclick="openDeposit()" data-ru="Пополнить" data-en="Deposit">Пополнить</button>
+    <div class="balance-chip">
+        <span id="balance-amount">{{ user.balance|floatformat:2 }}</span>
+        <img class="ton-icon" src="{% static 'images/toncoin-logo.png' %}" alt="TON">
+    </div>
+    <div class="avatar-wrap" id="user-icon" onclick="window.location.href='{% url 'profile' %}'">
+        <div class="avatar-placeholder"><i class="ti ti-user"></i></div>
+    </div>
+</div>
+
+<div class="topbar-spacer"></div>
+
+<div class="page-content">
+    <div class="live-feed-wrap">
+        <div class="live-feed-inner">
+            <div class="live-badge"><div class="live-dot"></div><span class="live-text">Live</span></div>
+            <div class="live-scroll-track"><div class="live-scroll-inner" id="live-scroll"></div></div>
+        </div>
+    </div>
+
+    <div class="case-title-row">
+        <button class="back-btn" onclick="window.location.href='{% url 'games' %}'"><i class="ti ti-arrow-left"></i></button>
+        <span class="case-title">{{ case.name }}</span>
+        <button class="quick-fast-btn" id="quick-fast-btn" onclick="toggleQuick()"><i class="ti ti-bolt"></i></button>
+    </div>
+
+    <div class="case-hero">
+        <div class="case-hero-inner" style="--tint: {{ case.tint_rgb }};">
+            <div class="case-glow-bg"></div>
+
+            <div class="reels-container" id="reels-container">
+                <div class="reel-wrap" id="reel-wrap-0">
+                    <div class="reel-fade-l"></div>
+                    <div class="reel-fade-r"></div>
+                    <div class="reel-marker"></div>
+                    <div class="reel-strip idle" id="reel-strip-0"></div>
+                </div>
+            </div>
+
+            <div class="case-controls-card">
+                <!-- ПРОМОКОД -->
+                <div class="promo-wrap">
+                    <input type="text" class="promo-input" id="promo-input"
+                        data-ru-placeholder="Введите промокод" data-en-placeholder="Enter promo code"
+                        placeholder="Введите промокод" autocomplete="off" spellcheck="false">
+                    <span class="promo-error" id="promo-error"></span>
+                </div>
+
+                <button class="open-btn" id="open-btn" data-ru="Активировать промокод" data-en="Activate promo code">
+                    Активировать промокод
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="contents-section">
+        <div class="contents-title" data-ru="Содержимое кейса" data-en="Case contents">Содержимое кейса</div>
+        <div class="contents-meta" id="gifts-meta" data-ru="Количество подарков: 0" data-en="Number of gifts: 0">Количество подарков: 0</div>
+        <div class="gifts-grid" id="gifts-grid"></div>
+    </div>
+
+</div>
+
+<div id="app-toast" class="giveaway-toast">
+    <div class="giveaway-toast-inner">
+        <div class="giveaway-toast-text">
+            <span class="giveaway-toast-emoji"><i class="ti ti-alert-triangle" style="font-size:20px;color:#ffa000;"></i></span>
+            <span id="app-toast-text"></span>
+        </div>
+        <button class="giveaway-toast-close" onclick="closeAppToast()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="giveaway-toast-bar" id="app-toast-bar"></div>
+</div>
+
+<div class="win-overlay" id="win-overlay">
+    <div class="win-modal" id="win-modal">
+        <div class="win-modal-glow"></div>
+        <div class="win-modal-handle"></div>
+        <div class="win-sparks" id="win-sparks"></div>
+        <div class="win-content">
+        <div class="win-title" id="win-title" data-ru="ВЫ ВЫИГРАЛИ!" data-en="YOU WON!">ВЫ ВЫИГРАЛИ!</div>
+
+        <div class="win-slider-wrap">
+            <button class="win-arrow win-arrow-l" id="win-prev" onclick="slideWin(-1)"><span>&#8249;</span></button>
+            <div class="win-slides" id="win-slides"></div>
+            <button class="win-arrow win-arrow-r" id="win-next" onclick="slideWin(1)"><span>&#8250;</span></button>
+        </div>
+
+        <div class="win-dots" id="win-dots"></div>
+
+        <div class="win-actions">
+            <button class="win-btn-take" onclick="takeWonItem()" data-ru="Забрать" data-en="Claim">Забрать</button>
+            <button class="win-btn-sell" onclick="sellWonItem()" data-ru="Продать" data-en="Sell">Продать</button>
+        </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    window.STATIC_TON_LOGO = "{% static 'images/toncoin-logo.png' %}";
+    window.APP_DATA = window.APP_DATA || {};
+    window.APP_DATA.lang = "{{ lang }}";
+    window.CASE_DATA = {
+        slug: "{{ case.slug|escapejs }}",
+        name: "{{ case.name|escapejs }}",
+        price: {{ case.price }},
+        gifts: [
+            {% for item in case_items %}
+            {
+                id: {{ item.gift.id }},
+                name: "{{ item.gift.name|escapejs }}",
+                img: "{{ item.gift.image_url|escapejs }}",
+                price: {{ item.gift.price }},
+                weight: {{ item.weight }}
+            }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ]
+    };
+</script>
+<script src="{% static 'games/js/promo_case_script.js' %}"></script>
+{% endblock %}

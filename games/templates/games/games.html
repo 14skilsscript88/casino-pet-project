@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block head-content %}
+<link rel="stylesheet" href="{% static 'games/css/games_style.css' %}">
+{% endblock %}
+
+{% block main-content %}
+
+<div class="topbar">
+    <button class="deposit-btn" onclick="openDeposit()" data-ru="Пополнить" data-en="Deposit">Пополнить</button>
+
+    <div class="balance-chip">
+        <span id="balance-amount">{{ user.balance|floatformat:2 }}</span>
+        <img src="{% static 'images/toncoin-logo.png' %}" style="width:20px;height:20px;border-radius:50%;object-fit:cover;">
+    </div>
+
+    <div class="avatar-wrap" id="user-icon" onclick="window.location.href='{% url 'profile' %}'">
+        <div class="avatar-placeholder"><i class="ti ti-user"></i></div>
+    </div>
+</div>
+
+<div class="topbar-spacer"></div>
+
+<div class="page-content">
+    <div class="live-feed-wrap">
+        <div class="live-feed-inner">
+            <div class="live-badge">
+                <div class="live-dot"></div>
+                <span class="live-text">Live</span>
+            </div>
+            <div class="live-scroll-track">
+                <div class="live-scroll-inner" id="live-scroll"></div>
+            </div>
+        </div>
+    </div>
+ 
+    <div class="daily-bonus-wrap">
+        <div class="daily-bonus-card" onclick="window.location.href = '{% url 'open_case' 'free-case' %}'">
+            {% if lang == 'ru' %}
+            <img src="{% static 'games/images/free-case-slide.png'%}" alt="free-case-post">
+            {% else %}
+            <img src="{% static 'games/images/free-case-slide-en.jpg'%}" alt="free-case-post">
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="section-label" data-ru="Кейсы" data-en="Cases">Кейсы</div>
+    <div class="section-sublabel" data-ru="Открывай кейсы и получай крутые награды!" data-en="Open cases and get awesome rewards!">Открывай кейсы и получай крутые награды!</div>
+
+    <div class="cases-grid">
+    {% if cases %}
+        {% for case in cases %}
+        <div class="case-card" style="--tint: {{ case.tint_rgb }};" onclick="window.location.href='{% url 'open_case' case.slug %}'">
+            <div class="case-img-wrap">
+                <div class="case-glow"></div>
+                <img src="{{ case.image.url }}" alt="{{ case.name }} case">
+            </div>
+            <div class="case-info">
+                <div class="case-name">{{ case.name }}</div>
+                <div class="case-price-bar">
+                    {% if case.slug == "free-case" %}
+                    <span class="case-price">FREE</span>
+                    {% elif case.slug == "promo-case" %}
+                    <span class="case-price">PROMO</span>
+                    {% else %}
+                    <span class="case-price">{{ case.price|floatformat:2 }} GRAM</span>
+                    <img src="{% static 'images/toncoin-logo.png' %}" alt="ton" class="case-ton-icon">
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p class="section-sublabel" data-ru="Пока нет доступных кейсов" data-en="No cases available yet">Пока нет доступных кейсов</p>
+    {% endif %}
+    </div>
+</div>
+<script>
+    window.APP_DATA = window.APP_DATA || {};
+    window.APP_DATA.lang = "{{ lang }}";
+</script>
+<script src="{% static 'games/js/games_script.js' %}"></script>
+{% endblock %}
