@@ -47,7 +47,7 @@ Other: Telegram Bot API (subscription verification, prepared inline messages).<b
 <br>
 1. Clone the repository and install dependencies:
 ```
-git clone ...
+git clone https://github.com/14skilsscript88/casino-pet-project.git
 cd BlazeGift
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
