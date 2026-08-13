@@ -1,6 +1,6 @@
 **BlazeGift**
 
-A Telegram Mini App featuring a case-opening system (CS:GO/loot-box style) where users win NFT gifts and withdraw them to their accounts. Built with a Django backend, an aiogram 3 bot, and a Telegram Mini App frontend.
+A Telegram Mini App featuring a case-opening system where users win NFT gifts and withdraw them to their accounts. Built with a Django backend, an aiogram 3 bot, and a Telegram Mini App frontend.
 
 >⚠️ Educational/demonstration project. Not a financial product; no real-world payouts are made.
 
