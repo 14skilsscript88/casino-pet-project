@@ -83,7 +83,3 @@ python manage.py bot
 <br>
 <br>
 
-**License**
-
-MIT
-
